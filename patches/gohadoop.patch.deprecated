@@ -1,0 +1,852 @@
+diff --git hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/ipc/Server.java hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/ipc/Server.java
+index 1023e34..8c5f5a1 100644
+--- hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/ipc/Server.java
++++ hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/ipc/Server.java
+@@ -346,6 +346,11 @@ public static boolean isRpcInvocation() {
+     return CurCall.get() != null;
+   }
+ 
++  @Private
++  public String getBindAddress() {
++    return bindAddress;
++  }
++  
+   private String bindAddress; 
+   private int port;                               // port we listen on
+   private int handlerCount;                       // number of handler threads
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/ApplicationConstants.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/ApplicationConstants.java
+index d42cd67..f0d6799 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/ApplicationConstants.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/ApplicationConstants.java
+@@ -103,6 +103,9 @@
+    */
+   public static final String MAX_APP_ATTEMPTS_ENV = "MAX_APP_ATTEMPTS";
+ 
++  public static final String APPLICATION_ATTEMPT_ID_ENV = 
++      "APPLICATION_ATTEMPT_ID";
++  
+   /**
+    * Environment for Applications.
+    * 
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/AllocateRequest.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/AllocateRequest.java
+index 62316a6..a759cc5 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/AllocateRequest.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/AllocateRequest.java
+@@ -20,9 +20,11 @@
+ 
+ import java.util.List;
+ 
++import org.apache.hadoop.classification.InterfaceAudience.Private;
+ import org.apache.hadoop.classification.InterfaceAudience.Public;
+ import org.apache.hadoop.classification.InterfaceStability.Stable;
+ import org.apache.hadoop.yarn.api.ApplicationMasterProtocol;
++import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+ import org.apache.hadoop.yarn.api.records.Container;
+ import org.apache.hadoop.yarn.api.records.ContainerId;
+ import org.apache.hadoop.yarn.api.records.ResourceBlacklistRequest;
+@@ -201,4 +203,11 @@ public abstract void setResourceBlacklistRequest(
+   @Stable
+   public abstract void setIncreaseRequests(
+       List<ContainerResourceIncreaseRequest> increaseRequests);
++
++  @Private
++  public abstract ApplicationAttemptId getApplicationAttemptId();
++  
++  @Private
++  public abstract void setApplicationAttemptId(
++      ApplicationAttemptId applicationAttemptId);
+ }
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/FinishApplicationMasterRequest.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/FinishApplicationMasterRequest.java
+index 15c3680..0b3fae9 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/FinishApplicationMasterRequest.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/FinishApplicationMasterRequest.java
+@@ -18,9 +18,11 @@
+ 
+ package org.apache.hadoop.yarn.api.protocolrecords;
+ 
++import org.apache.hadoop.classification.InterfaceAudience.Private;
+ import org.apache.hadoop.classification.InterfaceAudience.Public;
+ import org.apache.hadoop.classification.InterfaceStability.Stable;
+ import org.apache.hadoop.yarn.api.ApplicationMasterProtocol;
++import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+ import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
+ import org.apache.hadoop.yarn.util.Records;
+ 
+@@ -121,4 +123,10 @@ public static FinishApplicationMasterRequest newInstance(
+   @Stable
+   public abstract void setTrackingUrl(String url);
+ 
++  @Private
++  public abstract ApplicationAttemptId getApplicationAttemptId();
++  
++  @Private
++  public abstract void setApplicationAttemptId(
++      ApplicationAttemptId applicationAttemptId);
+ }
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/RegisterApplicationMasterRequest.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/RegisterApplicationMasterRequest.java
+index 6b01854..d52f04a 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/RegisterApplicationMasterRequest.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/RegisterApplicationMasterRequest.java
+@@ -18,9 +18,11 @@
+ 
+ package org.apache.hadoop.yarn.api.protocolrecords;
+ 
++import org.apache.hadoop.classification.InterfaceAudience.Private;
+ import org.apache.hadoop.classification.InterfaceAudience.Public;
+ import org.apache.hadoop.classification.InterfaceStability.Stable;
+ import org.apache.hadoop.yarn.api.ApplicationMasterProtocol;
++import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+ import org.apache.hadoop.yarn.util.Records;
+ 
+ /**
+@@ -133,4 +135,11 @@ public static RegisterApplicationMasterRequest newInstance(String host,
+   @Public
+   @Stable
+   public abstract void setTrackingUrl(String trackingUrl);
++  
++  @Private
++  public abstract ApplicationAttemptId getApplicationAttemptId();
++  
++  @Private
++  public abstract void setApplicationAttemptId(
++      ApplicationAttemptId applicationAttemptId);
+ }
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/StartContainerRequest.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/StartContainerRequest.java
+index 1dcefb2..12deb50 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/StartContainerRequest.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/StartContainerRequest.java
+@@ -18,9 +18,11 @@
+ 
+ package org.apache.hadoop.yarn.api.protocolrecords;
+ 
++import org.apache.hadoop.classification.InterfaceAudience.Private;
+ import org.apache.hadoop.classification.InterfaceAudience.Public;
+ import org.apache.hadoop.classification.InterfaceStability.Stable;
+ import org.apache.hadoop.yarn.api.ContainerManagementProtocol;
++import org.apache.hadoop.yarn.api.records.Container;
+ import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
+ import org.apache.hadoop.yarn.api.records.NMToken;
+ import org.apache.hadoop.yarn.api.records.Token;
+@@ -90,4 +92,10 @@ public static StartContainerRequest newInstance(
+   @Public
+   @Stable
+   public abstract void setContainerToken(Token container);
++  
++  @Private
++  public abstract Container getContainer();
++  
++  @Private
++  public abstract void setContainer(Container container);
+ }
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/conf/YarnConfiguration.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/conf/YarnConfiguration.java
+index 9e08ef5..175dcc5 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/conf/YarnConfiguration.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java/org/apache/hadoop/yarn/conf/YarnConfiguration.java
+@@ -1287,6 +1287,11 @@
+   public static final String YARN_HTTP_POLICY_DEFAULT = HttpConfig.Policy.HTTP_ONLY
+       .name();
+ 
++  @Private
++  public static final String YARN_RPC_AM_AUTH = YARN_PREFIX + "rpc.auth";
++  @Private
++  public static final boolean DEFAULT_YARN_RPC_AM_AUTH = true;
++
+   public YarnConfiguration() {
+     super();
+   }
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/proto/yarn_service_protos.proto hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/proto/yarn_service_protos.proto
+index df8784b..dad5ff2 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/proto/yarn_service_protos.proto
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/proto/yarn_service_protos.proto
+@@ -38,6 +38,7 @@ message RegisterApplicationMasterRequestProto {
+   optional string host = 1;
+   optional int32 rpc_port = 2;
+   optional string tracking_url = 3;
++  optional ApplicationAttemptIdProto application_attempt_id = 4;
+ }
+ 
+ message RegisterApplicationMasterResponseProto {
+@@ -53,6 +54,7 @@ message FinishApplicationMasterRequestProto {
+   optional string diagnostics = 1;
+   optional string tracking_url = 2;
+   optional FinalApplicationStatusProto final_application_status = 3;
++  optional ApplicationAttemptIdProto application_attempt_id = 4;
+ }
+ 
+ message FinishApplicationMasterResponseProto {
+@@ -66,6 +68,7 @@ message AllocateRequestProto {
+   optional int32 response_id = 4;
+   optional float progress = 5;
+   repeated ContainerResourceIncreaseRequestProto increase_request = 6;
++  optional ApplicationAttemptIdProto application_attempt_id = 7;
+ }
+ 
+ message NMTokenProto {
+@@ -196,6 +199,7 @@ message GetQueueUserAclsInfoResponseProto {
+ message StartContainerRequestProto {
+   optional ContainerLaunchContextProto container_launch_context = 1;
+   optional hadoop.common.TokenProto container_token = 2;
++  optional ContainerProto container = 3;
+ }
+ 
+ message StartContainerResponseProto {
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/AllocateRequestPBImpl.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/AllocateRequestPBImpl.java
+index dc11165..a556f7e 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/AllocateRequestPBImpl.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/AllocateRequestPBImpl.java
+@@ -26,14 +26,17 @@
+ import org.apache.hadoop.classification.InterfaceAudience.Private;
+ import org.apache.hadoop.classification.InterfaceStability.Unstable;
+ import org.apache.hadoop.yarn.api.protocolrecords.AllocateRequest;
++import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+ import org.apache.hadoop.yarn.api.records.ContainerId;
+ import org.apache.hadoop.yarn.api.records.ContainerResourceIncreaseRequest;
+ import org.apache.hadoop.yarn.api.records.ResourceBlacklistRequest;
+ import org.apache.hadoop.yarn.api.records.ResourceRequest;
++import org.apache.hadoop.yarn.api.records.impl.pb.ApplicationAttemptIdPBImpl;
+ import org.apache.hadoop.yarn.api.records.impl.pb.ContainerIdPBImpl;
+ import org.apache.hadoop.yarn.api.records.impl.pb.ContainerResourceIncreaseRequestPBImpl;
+ import org.apache.hadoop.yarn.api.records.impl.pb.ResourceBlacklistRequestPBImpl;
+ import org.apache.hadoop.yarn.api.records.impl.pb.ResourceRequestPBImpl;
++import org.apache.hadoop.yarn.proto.YarnProtos.ApplicationAttemptIdProto;
+ import org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto;
+ import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceIncreaseRequestProto;
+ import org.apache.hadoop.yarn.proto.YarnProtos.ResourceBlacklistRequestProto;
+@@ -54,6 +57,7 @@
+   private List<ContainerId> release = null;
+   private List<ContainerResourceIncreaseRequest> increaseRequests = null;
+   private ResourceBlacklistRequest blacklistRequest = null;
++  private ApplicationAttemptId applicationAttemptId = null;
+   
+   public AllocateRequestPBImpl() {
+     builder = AllocateRequestProto.newBuilder();
+@@ -104,6 +108,10 @@ private void mergeLocalToBuilder() {
+     if (this.blacklistRequest != null) {
+       builder.setBlacklistRequest(convertToProtoFormat(this.blacklistRequest));
+     }
++    if (this.applicationAttemptId != null) {
++      builder.setApplicationAttemptId(
++          convertToProtoFormat(this.applicationAttemptId));
++    }
+   }
+ 
+   private void mergeLocalToProto() {
+@@ -359,6 +367,40 @@ public void remove() {
+     builder.addAllRelease(iterable);
+   }
+ 
++  public ApplicationAttemptId getApplicationAttemptId() {
++    AllocateRequestProtoOrBuilder p = viaProto ? proto : builder;
++    
++    if (this.applicationAttemptId != null) {
++      return this.applicationAttemptId;
++    }
++    if (!p.hasApplicationAttemptId()) {
++      return null;
++    }    
++    this.applicationAttemptId = convertFromProtoFormat(p.getApplicationAttemptId());
++    return this.applicationAttemptId;
++  
++  }
++  
++  public  void setApplicationAttemptId(
++      ApplicationAttemptId applicationAttemptId) {
++    maybeInitBuilder();
++    if(this.applicationAttemptId == null) {
++      builder.clearApplicationAttemptId();
++    }
++    this.applicationAttemptId = applicationAttemptId;
++  }
++
++  private ApplicationAttemptIdPBImpl convertFromProtoFormat(
++      ApplicationAttemptIdProto appAttemptIdProto) {
++    return new ApplicationAttemptIdPBImpl(appAttemptIdProto);
++  }
++
++  private ApplicationAttemptIdProto convertToProtoFormat(
++      ApplicationAttemptId appAttemptId) {
++    return ((ApplicationAttemptIdPBImpl)appAttemptId).getProto();
++  }
++
++
+   private ResourceRequestPBImpl convertFromProtoFormat(ResourceRequestProto p) {
+     return new ResourceRequestPBImpl(p);
+   }
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/FinishApplicationMasterRequestPBImpl.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/FinishApplicationMasterRequestPBImpl.java
+index 2805f82..139fde7 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/FinishApplicationMasterRequestPBImpl.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/FinishApplicationMasterRequestPBImpl.java
+@@ -22,8 +22,11 @@
+ import org.apache.hadoop.classification.InterfaceAudience.Private;
+ import org.apache.hadoop.classification.InterfaceStability.Unstable;
+ import org.apache.hadoop.yarn.api.protocolrecords.FinishApplicationMasterRequest;
++import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
+ import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
++import org.apache.hadoop.yarn.api.records.impl.pb.ApplicationAttemptIdPBImpl;
+ import org.apache.hadoop.yarn.api.records.impl.pb.ProtoUtils;
++import org.apache.hadoop.yarn.proto.YarnProtos.ApplicationAttemptIdProto;
+ import org.apache.hadoop.yarn.proto.YarnProtos.FinalApplicationStatusProto;
+ import org.apache.hadoop.yarn.proto.YarnServiceProtos.FinishApplicationMasterRequestProto;
+ import org.apache.hadoop.yarn.proto.YarnServiceProtos.FinishApplicationMasterRequestProtoOrBuilder;
+@@ -37,6 +40,8 @@
+   FinishApplicationMasterRequestProto.Builder builder = null;
+   boolean viaProto = false;
+ 
++  private ApplicationAttemptId applicationAttemptId = null;
++  
+   public FinishApplicationMasterRequestPBImpl() {
+     builder = FinishApplicationMasterRequestProto.newBuilder();
+   }
+@@ -74,6 +79,9 @@ public String toString() {
+   }
+ 
+   private void mergeLocalToBuilder() {
++    if (this.applicationAttemptId != null) {
++      builder.setApplicationAttemptId(convertToProtoFormat(this.applicationAttemptId));
++    }
+   }
+ 
+   private void mergeLocalToProto() {
+@@ -142,6 +150,40 @@ public void setFinalApplicationStatus(FinalApplicationStatus finalState) {
+     builder.setFinalApplicationStatus(convertToProtoFormat(finalState));
+   }
+ 
++  public ApplicationAttemptId getApplicationAttemptId() {
++    FinishApplicationMasterRequestProtoOrBuilder p = viaProto ? proto : builder;
++    
++    if (this.applicationAttemptId != null) {
++      return this.applicationAttemptId;
++    }
++    if (!p.hasApplicationAttemptId()) {
++      return null;
++    }    
++    this.applicationAttemptId = convertFromProtoFormat(p.getApplicationAttemptId());
++    return this.applicationAttemptId;
++  
++  }
++  
++  public  void setApplicationAttemptId(
++      ApplicationAttemptId applicationAttemptId) {
++    maybeInitBuilder();
++    if(this.applicationAttemptId == null) {
++      builder.clearApplicationAttemptId();
++    }
++    this.applicationAttemptId = applicationAttemptId;
++  }
++
++  private ApplicationAttemptIdPBImpl convertFromProtoFormat(
++      ApplicationAttemptIdProto appAttemptIdProto) {
++    return new ApplicationAttemptIdPBImpl(appAttemptIdProto);
++  }
++
++  private ApplicationAttemptIdProto convertToProtoFormat(
++      ApplicationAttemptId appAttemptId) {
++    return ((ApplicationAttemptIdPBImpl)appAttemptId).getProto();
++  }
++
++
+   private FinalApplicationStatus convertFromProtoFormat(FinalApplicationStatusProto s) {
+     return ProtoUtils.convertFromProtoFormat(s);
+   }
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/RegisterApplicationMasterRequestPBImpl.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/RegisterApplicationMasterRequestPBImpl.java
+index 037dfd9..f6fbe16 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/RegisterApplicationMasterRequestPBImpl.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/RegisterApplicationMasterRequestPBImpl.java
+@@ -22,6 +22,9 @@
+ import org.apache.hadoop.classification.InterfaceAudience.Private;
+ import org.apache.hadoop.classification.InterfaceStability.Unstable;
+ import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterRequest;
++import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
++import org.apache.hadoop.yarn.api.records.impl.pb.ApplicationAttemptIdPBImpl;
++import org.apache.hadoop.yarn.proto.YarnProtos.ApplicationAttemptIdProto;
+ import org.apache.hadoop.yarn.proto.YarnServiceProtos.RegisterApplicationMasterRequestProto;
+ import org.apache.hadoop.yarn.proto.YarnServiceProtos.RegisterApplicationMasterRequestProtoOrBuilder;
+ 
+@@ -34,6 +37,8 @@
+   RegisterApplicationMasterRequestProto.Builder builder = null;
+   boolean viaProto = false;
+   
++  private ApplicationAttemptId applicationAttemptId;
++  
+   public RegisterApplicationMasterRequestPBImpl() {
+     builder = RegisterApplicationMasterRequestProto.newBuilder();
+   }
+@@ -71,6 +76,9 @@ public String toString() {
+   }
+ 
+   private void mergeLocalToBuilder() {
++    if (this.applicationAttemptId != null) {
++      builder.setApplicationAttemptId(convertToProtoFormat(this.applicationAttemptId));
++    }
+   }
+ 
+   private void mergeLocalToProto() {
+@@ -131,4 +139,37 @@ public void setTrackingUrl(String url) {
+     }
+     builder.setTrackingUrl(url);
+   }
++
++  public ApplicationAttemptId getApplicationAttemptId() {
++    RegisterApplicationMasterRequestProtoOrBuilder p = viaProto ? proto : builder;
++    
++    if (this.applicationAttemptId != null) {
++      return this.applicationAttemptId;
++    }
++    if (!p.hasApplicationAttemptId()) {
++      return null;
++    }    
++    this.applicationAttemptId = convertFromProtoFormat(p.getApplicationAttemptId());
++    return this.applicationAttemptId;
++  
++  }
++  
++  public  void setApplicationAttemptId(
++      ApplicationAttemptId applicationAttemptId) {
++    maybeInitBuilder();
++    if(this.applicationAttemptId == null) {
++      builder.clearApplicationAttemptId();
++    }
++    this.applicationAttemptId = applicationAttemptId;
++  }
++
++  private ApplicationAttemptIdPBImpl convertFromProtoFormat(
++      ApplicationAttemptIdProto appAttemptIdProto) {
++    return new ApplicationAttemptIdPBImpl(appAttemptIdProto);
++  }
++
++  private ApplicationAttemptIdProto convertToProtoFormat(ApplicationAttemptId appAttemptId) {
++    return ((ApplicationAttemptIdPBImpl)appAttemptId).getProto();
++  }
++
+ }  
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/StartContainerRequestPBImpl.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/StartContainerRequestPBImpl.java
+index c1cd0eb..4c0ac08 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/StartContainerRequestPBImpl.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java/org/apache/hadoop/yarn/api/protocolrecords/impl/pb/StartContainerRequestPBImpl.java
+@@ -23,11 +23,14 @@
+ import org.apache.hadoop.classification.InterfaceStability.Unstable;
+ import org.apache.hadoop.security.proto.SecurityProtos.TokenProto;
+ import org.apache.hadoop.yarn.api.protocolrecords.StartContainerRequest;
++import org.apache.hadoop.yarn.api.records.Container;
+ import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
+ import org.apache.hadoop.yarn.api.records.Token;
+ import org.apache.hadoop.yarn.api.records.impl.pb.ContainerLaunchContextPBImpl;
++import org.apache.hadoop.yarn.api.records.impl.pb.ContainerPBImpl;
+ import org.apache.hadoop.yarn.api.records.impl.pb.TokenPBImpl;
+ import org.apache.hadoop.yarn.proto.YarnProtos.ContainerLaunchContextProto;
++import org.apache.hadoop.yarn.proto.YarnProtos.ContainerProto;
+ import org.apache.hadoop.yarn.proto.YarnServiceProtos.StartContainerRequestProto;
+ import org.apache.hadoop.yarn.proto.YarnServiceProtos.StartContainerRequestProtoOrBuilder;
+ 
+@@ -44,6 +47,8 @@
+ 
+   private Token containerToken = null;
+   
++  private Container container = null;
++  
+   public StartContainerRequestPBImpl() {
+     builder = StartContainerRequestProto.newBuilder();
+   }
+@@ -87,6 +92,9 @@ private void mergeLocalToBuilder() {
+     if(this.containerToken != null) {
+       builder.setContainerToken(convertToProtoFormat(this.containerToken));
+     }
++    if (this.container != null) {
++      builder.setContainer(convertToProtoFormat(this.container));
++    }
+   }
+ 
+   private void mergeLocalToProto() {
+@@ -148,6 +156,28 @@ public void setContainerToken(Token containerToken) {
+     this.containerToken = containerToken;
+   }
+ 
++  @Override
++  public Container getContainer() {
++    StartContainerRequestProtoOrBuilder p = viaProto ? proto : builder;
++    if (this.container != null) {
++      return this.container;
++    }
++    if (!p.hasContainer()) {
++      return null;
++    }
++    this.container = convertFromProtoFormat(p.getContainer());
++    return this.container;
++  }
++  
++  @Override
++  public void setContainer(Container container) {
++    maybeInitBuilder();
++    if(container == null) {
++      builder.clearContainer();
++    }
++    this.container = container;
++  }
++
+   private ContainerLaunchContextPBImpl convertFromProtoFormat(ContainerLaunchContextProto p) {
+     return new ContainerLaunchContextPBImpl(p);
+   }
+@@ -165,4 +195,13 @@ private TokenPBImpl convertFromProtoFormat(TokenProto containerProto) {
+   private TokenProto convertToProtoFormat(Token container) {
+     return ((TokenPBImpl)container).getProto();
+   }
++  
++  private ContainerPBImpl convertFromProtoFormat(ContainerProto containerProto) {
++    return new ContainerPBImpl(containerProto);
++  }
++
++  private ContainerProto convertToProtoFormat(Container container) {
++    return ((ContainerPBImpl)container).getProto();
++  }
++
+ }  
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java/org/apache/hadoop/yarn/server/nodemanager/containermanager/ContainerManagerImpl.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java/org/apache/hadoop/yarn/server/nodemanager/containermanager/ContainerManagerImpl.java
+index 12166e0..0873b88 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java/org/apache/hadoop/yarn/server/nodemanager/containermanager/ContainerManagerImpl.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java/org/apache/hadoop/yarn/server/nodemanager/containermanager/ContainerManagerImpl.java
+@@ -73,6 +73,7 @@
+ import org.apache.hadoop.yarn.api.records.ContainerState;
+ import org.apache.hadoop.yarn.api.records.ContainerStatus;
+ import org.apache.hadoop.yarn.api.records.NodeId;
++import org.apache.hadoop.yarn.api.records.Priority;
+ import org.apache.hadoop.yarn.api.records.SerializedException;
+ import org.apache.hadoop.yarn.api.records.impl.pb.ApplicationIdPBImpl;
+ import org.apache.hadoop.yarn.api.records.impl.pb.ProtoUtils;
+@@ -169,6 +170,8 @@
+ 
+   private long waitForContainersOnShutdownMillis;
+ 
++  private boolean rpcAuth = true;
++  
+   public ContainerManagerImpl(Context context, ContainerExecutor exec,
+       DeletionService deletionContext, NodeStatusUpdater nodeStatusUpdater,
+       NodeManagerMetrics metrics, ApplicationACLsManager aclsManager,
+@@ -388,10 +391,18 @@ protected void serviceStart() throws Exception {
+ 
+     Configuration serverConf = new Configuration(conf);
+ 
++    this.rpcAuth = 
++        conf.getBoolean(
++            YarnConfiguration.YARN_RPC_AM_AUTH, 
++            YarnConfiguration.DEFAULT_YARN_RPC_AM_AUTH);
++
++
+     // always enforce it to be token-based.
+-    serverConf.set(
+-      CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION,
+-      SaslRpcServer.AuthMethod.TOKEN.toString());
++    if (rpcAuth) {
++      serverConf.set(
++          CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION,
++          SaslRpcServer.AuthMethod.TOKEN.toString());
++    }
+     
+     YarnRPC rpc = YarnRPC.create(conf);
+ 
+@@ -619,6 +630,10 @@ protected NMTokenIdentifier selectNMTokenIdentifier(
+ 
+   protected void authorizeUser(UserGroupInformation remoteUgi,
+       NMTokenIdentifier nmTokenIdentifier) throws YarnException {
++    if (!rpcAuth) {
++      return;
++    }
++    
+     if (!remoteUgi.getUserName().equals(
+       nmTokenIdentifier.getApplicationAttemptId().toString())) {
+       throw RPCUtil.getRemoteException("Expected applicationAttemptId: "
+@@ -695,10 +710,24 @@ protected void authorizeStartRequest(NMTokenIdentifier nmTokenIdentifier,
+     for (StartContainerRequest request : requests.getStartContainerRequests()) {
+       ContainerId containerId = null;
+       try {
+-        ContainerTokenIdentifier containerTokenIdentifier =
+-            BuilderUtils.newContainerTokenIdentifier(request.getContainerToken());
+-        verifyAndGetContainerTokenIdentifier(request.getContainerToken(),
+-          containerTokenIdentifier);
++        ContainerTokenIdentifier containerTokenIdentifier = null;
++        if (rpcAuth) {
++          containerTokenIdentifier =
++              BuilderUtils.newContainerTokenIdentifier(request.getContainerToken());
++          verifyAndGetContainerTokenIdentifier(request.getContainerToken(),
++              containerTokenIdentifier);
++        } else {
++          LOG.debug("rpcAuth is false... using request.getContainer");
++          ContainerId cId =                   
++              request.getContainer().getId();
++          containerTokenIdentifier =
++              new ContainerTokenIdentifier(
++                  cId, server.getBindAddress(), 
++                  UserGroupInformation.getCurrentUser().getShortUserName(), 
++                  request.getContainer().getResource(), Long.MAX_VALUE, 0, 
++                  cId.getApplicationAttemptId().getApplicationId().getClusterTimestamp(), 
++                  Priority.newInstance(0), 0);
++        }
+         containerId = containerTokenIdentifier.getContainerID();
+         startContainerInternal(nmTokenIdentifier, containerTokenIdentifier,
+           request);
+@@ -752,6 +781,8 @@ private ContainerManagerApplicationProto buildAppProto(ApplicationId appId,
+     return builder.build();
+   }
+ 
++  private static Credentials EMPTY_CREDENTIALS = new Credentials();
++  
+   @SuppressWarnings("unchecked")
+   private void startContainerInternal(NMTokenIdentifier nmTokenIdentifier,
+       ContainerTokenIdentifier containerTokenIdentifier,
+@@ -768,8 +799,6 @@ private void startContainerInternal(NMTokenIdentifier nmTokenIdentifier,
+      * belongs to correct Node Manager (part of retrieve password). c) It has
+      * correct RMIdentifier. d) It is not expired.
+      */
+-    authorizeStartRequest(nmTokenIdentifier, containerTokenIdentifier);
+- 
+     if (containerTokenIdentifier.getRMIdentifer() != nodeStatusUpdater
+         .getRMIdentifier()) {
+         // Is the container coming from unknown RM
+@@ -778,8 +807,19 @@ private void startContainerInternal(NMTokenIdentifier nmTokenIdentifier,
+           .append(" rejected as it is allocated by a previous RM");
+         throw new InvalidContainerException(sb.toString());
+     }
+-    // update NMToken
+-    updateNMTokenIdentifier(nmTokenIdentifier);
++    
++    ContainerLaunchContext launchContext = request.getContainerLaunchContext();
++    Credentials credentials = EMPTY_CREDENTIALS;
++    
++    if (rpcAuth) {
++      authorizeStartRequest(nmTokenIdentifier, containerTokenIdentifier);
++
++      // update NMToken
++      updateNMTokenIdentifier(nmTokenIdentifier);
++
++      // parse credentials from launch context if rpcAuth is in effect
++      credentials = parseCredentials(launchContext);
++    }
+ 
+     ContainerId containerId = containerTokenIdentifier.getContainerID();
+     String containerIdStr = containerId.toString();
+@@ -787,7 +827,6 @@ private void startContainerInternal(NMTokenIdentifier nmTokenIdentifier,
+ 
+     LOG.info("Start request for " + containerIdStr + " by user " + user);
+ 
+-    ContainerLaunchContext launchContext = request.getContainerLaunchContext();
+ 
+     Map<String, ByteBuffer> serviceData = getAuxServiceMetaData();
+     if (launchContext.getServiceData()!=null && 
+@@ -801,12 +840,12 @@ private void startContainerInternal(NMTokenIdentifier nmTokenIdentifier,
+       }
+     }
+ 
+-    Credentials credentials = parseCredentials(launchContext);
+ 
+     Container container =
+         new ContainerImpl(getConfig(), this.dispatcher,
+             context.getNMStateStore(), launchContext,
+-          credentials, metrics, containerTokenIdentifier);
++          credentials, metrics, containerTokenIdentifier, 
++          containerId, containerTokenIdentifier.getResource(), user);
+     ApplicationId applicationID =
+         containerId.getApplicationAttemptId().getApplicationId();
+     if (context.getContainers().putIfAbsent(containerId, container) != null) {
+@@ -1009,6 +1048,11 @@ private ContainerStatus getContainerStatusInternal(ContainerId containerID,
+   protected void authorizeGetAndStopContainerRequest(ContainerId containerId,
+       Container container, boolean stopRequest, NMTokenIdentifier identifier)
+       throws YarnException {
++    if (!rpcAuth) {
++      LOG.debug("rpcAuth is false... skipping authorizeGetAndStopContainerRequest");
++      return;
++    }
++    
+     /*
+      * For get/stop container status; we need to verify that 1) User (NMToken)
+      * application attempt only has started container. 2) Requested containerId
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java/org/apache/hadoop/yarn/server/nodemanager/containermanager/container/ContainerImpl.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java/org/apache/hadoop/yarn/server/nodemanager/containermanager/container/ContainerImpl.java
+index fa54ee1..fb3cc35 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java/org/apache/hadoop/yarn/server/nodemanager/containermanager/container/ContainerImpl.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java/org/apache/hadoop/yarn/server/nodemanager/containermanager/container/ContainerImpl.java
+@@ -115,17 +115,28 @@ public ContainerImpl(Configuration conf, Dispatcher dispatcher,
+       NMStateStoreService stateStore, ContainerLaunchContext launchContext,
+       Credentials creds, NodeManagerMetrics metrics,
+       ContainerTokenIdentifier containerTokenIdentifier) {
++    this(conf, dispatcher, stateStore, launchContext, creds, metrics,
++        containerTokenIdentifier, containerTokenIdentifier.getContainerID(),
++        containerTokenIdentifier.getResource(),
++        containerTokenIdentifier.getApplicationSubmitter());  
++  }
++  
++  public ContainerImpl(Configuration conf, Dispatcher dispatcher,
++      NMStateStoreService stateStore, ContainerLaunchContext launchContext,
++      Credentials creds, NodeManagerMetrics metrics,
++      ContainerTokenIdentifier containerTokenIdentifier, 
++      ContainerId containerId, Resource resource, String user) {
+     this.daemonConf = conf;
+     this.dispatcher = dispatcher;
+     this.stateStore = stateStore;
+     this.launchContext = launchContext;
+     this.containerTokenIdentifier = containerTokenIdentifier;
+-    this.containerId = containerTokenIdentifier.getContainerID();
+-    this.resource = containerTokenIdentifier.getResource();
++    this.containerId = containerId;
++    this.resource = resource;
+     this.diagnostics = new StringBuilder();
+     this.credentials = creds;
+     this.metrics = metrics;
+-    user = containerTokenIdentifier.getApplicationSubmitter();
++    this.user = user;
+     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+     this.readLock = readWriteLock.readLock();
+     this.writeLock = readWriteLock.writeLock();
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java/org/apache/hadoop/yarn/server/resourcemanager/ApplicationMasterService.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java/org/apache/hadoop/yarn/server/resourcemanager/ApplicationMasterService.java
+index d77180c..5f36bd7 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java/org/apache/hadoop/yarn/server/resourcemanager/ApplicationMasterService.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java/org/apache/hadoop/yarn/server/resourcemanager/ApplicationMasterService.java
+@@ -114,6 +114,7 @@
+   private final AllocateResponse shutdown =
+       recordFactory.newRecordInstance(AllocateResponse.class);
+   private final RMContext rmContext;
++  private boolean rpcAuth = true;
+ 
+   public ApplicationMasterService(RMContext rmContext, YarnScheduler scheduler) {
+     super(ApplicationMasterService.class.getName());
+@@ -136,11 +137,22 @@ protected void serviceStart() throws Exception {
+         YarnConfiguration.DEFAULT_RM_SCHEDULER_PORT);
+ 
+     Configuration serverConf = conf;
++    
++    this.rpcAuth = 
++        conf.getBoolean(
++            YarnConfiguration.YARN_RPC_AM_AUTH, 
++            YarnConfiguration.DEFAULT_YARN_RPC_AM_AUTH);
++    
+     // If the auth is not-simple, enforce it to be token-based.
+     serverConf = new Configuration(conf);
+-    serverConf.set(
+-        CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION,
+-        SaslRpcServer.AuthMethod.TOKEN.toString());
++    if (rpcAuth) {
++      serverConf.set(
++          CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION,
++          SaslRpcServer.AuthMethod.TOKEN.toString());
++    } else {
++      LOG.debug("XXX YARN_RPC_AM_AUTH is off");
++    }
++    
+     this.server =
+       rpc.getServer(ApplicationMasterProtocol.class, this, masterServiceAddress,
+           serverConf, this.rmContext.getAMRMTokenSecretManager(),
+@@ -237,9 +249,10 @@ public RegisterApplicationMasterResponse registerApplicationMaster(
+       RegisterApplicationMasterRequest request) throws YarnException,
+       IOException {
+ 
+-    AMRMTokenIdentifier amrmTokenIdentifier = authorizeRequest();
+-    ApplicationAttemptId applicationAttemptId =
+-        amrmTokenIdentifier.getApplicationAttemptId();
++    ApplicationAttemptId applicationAttemptId = 
++        rpcAuth ? 
++            authorizeRequest().getApplicationAttemptId() : 
++            request.getApplicationAttemptId();
+ 
+     ApplicationId appID = applicationAttemptId.getApplicationId();
+     AllocateResponseLock lock = responseMap.get(applicationAttemptId);
+@@ -338,8 +351,10 @@ public FinishApplicationMasterResponse finishApplicationMaster(
+       FinishApplicationMasterRequest request) throws YarnException,
+       IOException {
+ 
+-    ApplicationAttemptId applicationAttemptId =
+-        authorizeRequest().getApplicationAttemptId();
++    ApplicationAttemptId applicationAttemptId = 
++        rpcAuth ? 
++            authorizeRequest().getApplicationAttemptId() : 
++            request.getApplicationAttemptId();
+ 
+     AllocateResponseLock lock = responseMap.get(applicationAttemptId);
+     if (lock == null) {
+@@ -414,10 +429,15 @@ public boolean hasApplicationMasterRegistered(
+   public AllocateResponse allocate(AllocateRequest request)
+       throws YarnException, IOException {
+ 
+-    AMRMTokenIdentifier amrmTokenIdentifier = authorizeRequest();
+-
+-    ApplicationAttemptId appAttemptId =
+-        amrmTokenIdentifier.getApplicationAttemptId();
++    AMRMTokenIdentifier amrmTokenIdentifier = null;
++    ApplicationAttemptId appAttemptId = null;
++    
++    if (rpcAuth) {
++      amrmTokenIdentifier = authorizeRequest();
++      appAttemptId = amrmTokenIdentifier.getApplicationAttemptId();
++    } else {
++      appAttemptId = request.getApplicationAttemptId();
++    }
+ 
+     this.amLivelinessMonitor.receivedPing(appAttemptId);
+ 
+@@ -567,20 +587,22 @@ public AllocateResponse allocate(AllocateRequest request)
+           .setPreemptionMessage(generatePreemptionMessage(allocation));
+ 
+       // update AMRMToken if the token is rolled-up
+-      MasterKeyData nextMasterKey =
+-          this.rmContext.getAMRMTokenSecretManager().getNextMasterKeyData();
++      if (rpcAuth) {
++        MasterKeyData nextMasterKey =
++            this.rmContext.getAMRMTokenSecretManager().getNextMasterKeyData();
+ 
+-      if (nextMasterKey != null
+-          && nextMasterKey.getMasterKey().getKeyId() != amrmTokenIdentifier
++        if (nextMasterKey != null
++            && nextMasterKey.getMasterKey().getKeyId() != amrmTokenIdentifier
+             .getKeyId()) {
+-        Token<AMRMTokenIdentifier> amrmToken =
+-            rmContext.getAMRMTokenSecretManager().createAndGetAMRMToken(
+-              appAttemptId);
+-        ((RMAppAttemptImpl)appAttempt).setAMRMToken(amrmToken);
+-        allocateResponse.setAMRMToken(org.apache.hadoop.yarn.api.records.Token
+-          .newInstance(amrmToken.getIdentifier(), amrmToken.getKind()
+-            .toString(), amrmToken.getPassword(), amrmToken.getService()
+-            .toString()));
++          Token<AMRMTokenIdentifier> amrmToken =
++              rmContext.getAMRMTokenSecretManager().createAndGetAMRMToken(
++                  appAttemptId);
++          ((RMAppAttemptImpl)appAttempt).setAMRMToken(amrmToken);
++          allocateResponse.setAMRMToken(org.apache.hadoop.yarn.api.records.Token
++              .newInstance(amrmToken.getIdentifier(), amrmToken.getKind()
++                  .toString(), amrmToken.getPassword(), amrmToken.getService()
++                  .toString()));
++        }
+       }
+ 
+       /*
+diff --git hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java/org/apache/hadoop/yarn/server/resourcemanager/amlauncher/AMLauncher.java hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java/org/apache/hadoop/yarn/server/resourcemanager/amlauncher/AMLauncher.java
+index 0dd9ba1..3363d0e 100644
+--- hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java/org/apache/hadoop/yarn/server/resourcemanager/amlauncher/AMLauncher.java
++++ hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java/org/apache/hadoop/yarn/server/resourcemanager/amlauncher/AMLauncher.java
+@@ -111,6 +111,7 @@ private void launch() throws IOException, YarnException {
+     StartContainerRequest scRequest =
+         StartContainerRequest.newInstance(launchContext,
+           masterContainer.getContainerToken());
++    scRequest.setContainer(masterContainer);
+     List<StartContainerRequest> list = new ArrayList<StartContainerRequest>();
+     list.add(scRequest);
+     StartContainersRequest allRequests =
+@@ -195,15 +196,21 @@ private ContainerLaunchContext createAMContainerLaunchContext(
+             new String[0])));
+     
+     // Finalize the container
+-    setupTokens(container, containerID);
++    setupEnvAndTokens(container, containerID);
+     
+     return container;
+   }
+ 
+-  private void setupTokens(
++  private void setupEnvAndTokens(
+       ContainerLaunchContext container, ContainerId containerID)
+       throws IOException {
+     Map<String, String> environment = container.getEnvironment();
++    
++    // Set appAttemptId
++    environment.put(ApplicationConstants.APPLICATION_ATTEMPT_ID_ENV, 
++        containerID.getApplicationAttemptId().toString());
++    
++    // Set web-proxy
+     environment.put(ApplicationConstants.APPLICATION_WEB_PROXY_BASE_ENV,
+         application.getWebProxyBase());
+     // Set AppSubmitTime and MaxAppAttempts to be consumable by the AM.
